@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curso Interactivo de Python: De Cero a Senior</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Warm Harmony -->
+    <!-- Application Structure Plan: La aplicación está diseñada como una 'Hoja de Ruta de Aprendizaje Visual'. Esta estructura transforma el informe lineal en un viaje interactivo y explorable. La interfaz principal muestra la ruta completa desde 'Cero' a 'Senior', con nodos que representan los módulos del curso. Al hacer clic en un nodo, se abre un panel lateral con información detallada, organizada en pestañas para facilitar la digestión del contenido. Esta arquitectura fue elegida para proporcionar una visión general clara, evitar la sobrecarga de información y hacer que el proceso de aprendizaje sea más atractivo y autodirigido que un simple documento de texto. -->
+    <!-- Visualization & Content Choices: La ruta de aprendizaje se crea con HTML/CSS para guiar al usuario. La información detallada de cada módulo se presenta en bloques de texto y ejemplos de código dentro de un panel con pestañas (HTML/CSS/JS) para una organización clara. Se utiliza un gráfico de barras de Chart.js al inicio para visualizar la 'curva de dificultad' de los módulos, estableciendo expectativas. Los conceptos clave como los pilares de la POO o las estructuras de datos se presentan en tarjetas comparativas (Flexbox/Grid) para un aprendizaje visual efectivo. Los fragmentos de código incluyen un botón para copiar, mejorando la usabilidad. Estas elecciones priorizan la interactividad y la claridad visual sobre el texto plano. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        .roadmap-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: #e5e7eb;
+            transform: translateX(-50%);
+            z-index: -1;
+        }
+        .roadmap-item:nth-child(odd) .roadmap-content {
+            margin-left: auto;
+            padding-left: 2.5rem;
+        }
+        .roadmap-item:nth-child(even) .roadmap-content {
+            margin-right: auto;
+            text-align: right;
+            padding-right: 2.5rem;
+        }
+        .roadmap-item:nth-child(even) .roadmap-content .icon-container {
+            right: -2rem; 
+            left: auto;
+        }
+        .roadmap-item .icon-container {
+            position: absolute;
+            left: -2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4rem;
+            height: 4rem;
+            background-color: white;
+            border: 4px solid #e5e7eb;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .panel {
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(100%);
+        }
+        .panel.open {
+            transform: translateX(0);
+        }
+        .tab-button.active {
+            border-color: #14b8a6;
+            color: #14b8a6;
+            font-weight: 600;
+        }
+        .code-block {
+            position: relative;
+        }
+        .copy-button {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #4b5563;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .code-block:hover .copy-button {
+            opacity: 1;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 40vh;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <div id="app" class="overflow-x-hidden">
+        <header class="py-12 bg-white">
+            <div class="container mx-auto px-4 text-center">
+                <h1 class="text-4xl md:text-5xl font-bold text-teal-700">Curso Interactivo de Python</h1>
+                <p class="mt-4 text-lg text-stone-600 max-w-3xl mx-auto">Una hoja de ruta visual para dominar Python, desde los fundamentos hasta las habilidades de un desarrollador Senior.</p>
+            </div>
+             <div class="mt-8 container mx-auto px-4">
+                <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-stone-200">
+                    <h3 class="text-xl font-bold text-center text-teal-800 mb-4">Visualización de la Curva de Aprendizaje</h3>
+                    <p class="text-center text-stone-500 mb-4 text-sm max-w-2xl mx-auto">Este gráfico representa la complejidad conceptual de cada módulo. Usa esta guía para prepararte para los desafíos y celebrar tu progreso a lo largo del curso.</p>
+                    <div class="chart-container">
+                        <canvas id="complexityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="container mx-auto px-4 py-16">
+            <div id="roadmap" class="relative">
+                <div class="roadmap-line"></div>
+                <!-- Roadmap items will be injected here by JavaScript -->
+            </div>
+        </main>
+
+        <footer class="bg-teal-800 text-white py-8">
+            <div class="container mx-auto px-4 text-center">
+                <p>&copy; 2025 Ruta de Aprendizaje de Python. Creado para una experiencia de aprendizaje interactiva.</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Side Panel for Content -->
+    <div id="contentPanel" class="panel fixed top-0 right-0 w-full md:w-3/4 lg:w-2/3 h-full bg-white shadow-2xl z-50 overflow-y-auto">
+        <div class="p-6 md:p-8">
+            <button id="closePanelButton" class="absolute top-4 right-4 text-stone-500 hover:text-stone-800 text-3xl">&times;</button>
+            <h2 id="panelTitle" class="text-3xl font-bold text-teal-700 mb-2"></h2>
+            <p id="panelDescription" class="text-stone-600 mb-6"></p>
+            <div id="panelTabs" class="border-b border-stone-200 mb-6">
+                <!-- Tab buttons will be injected here -->
+            </div>
+            <div id="panelContent">
+                <!-- Tab content will be injected here -->
+            </div>
+        </div>
+    </div>
+    <div id="panelOverlay" class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 z-40 hidden"></div>
+    
+    <script>
+        const courseData = {
+            'm1': {
+                title: 'Módulo 1: Primeros Pasos',
+                description: 'Configura tu entorno de desarrollo y escribe tu primer programa, entendiendo la sintaxis fundamental de Python.',
+                complexity: 1,
+                icon: '🚀',
+                tabs: {
+                    'instalacion': {
+                        title: 'Instalación y Entorno',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Configuración Profesional</h4>
+                            <p class="mb-4">El primer paso es instalar la última versión estable de Python. Recomendamos encarecidamente usar gestores de versiones como <strong>pyenv</strong>. Esto evita conflictos con la versión de Python del sistema y permite gestionar múltiples versiones para diferentes proyectos, una práctica estándar en el desarrollo profesional.</p>
+                            <div class="bg-stone-100 p-4 rounded-lg border border-stone-200">
+                                <h5 class="font-bold">¿Por qué es crucial?</h5>
+                                <p class="text-sm mt-2">Instalar paquetes globalmente en la versión del sistema puede romper herramientas del propio sistema operativo o crear conflictos de dependencias entre tus proyectos. Un entorno virtual por proyecto (usando <strong>venv</strong> o <strong>pipenv</strong>) es la clave para un desarrollo reproducible y sin sorpresas.</p>
+                            </div>
+                        `
+                    },
+                    'hola-mundo': {
+                        title: '¡Hola, Mundo!',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Tu Primer Programa</h4>
+                            <p class="mb-4">El clásico "¡Hola, Mundo!" es más que una tradición; es la prueba de que tu entorno está correctamente configurado.</p>
+                            <div class="code-block bg-gray-800 text-white p-4 rounded-lg">
+                                <pre><code>print("¡Hola, Mundo!")</code></pre>
+                            </div>
+                        `
+                    },
+                    'sintaxis': {
+                        title: 'Sintaxis Esencial',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Indentación y Comentarios</h4>
+                            <p class="mb-4">A diferencia de otros lenguajes, en Python la <strong>indentación</strong> (usualmente 4 espacios) no es estética, ¡es sintaxis! Define los bloques de código y fuerza a escribir código limpio y legible. Esto es uno de los superpoderes de Python para mantener la calidad del código en proyectos grandes.</p>
+                            <p class="mb-4">Los comentarios se usan para explicar el código. Los de una línea empiezan con <code>#</code>. Para documentación (docstrings) se usan triples comillas <code>"""..."""</code>, que herramientas automáticas pueden procesar.</p>
+                            <div class="code-block bg-gray-800 text-white p-4 rounded-lg">
+                                <pre><code># Esto es un comentario de una línea
+
+def mi_funcion():
+    """
+    Esto es un docstring.
+    Explica lo que hace la función.
+    """
+    # El código de la función debe estar indentado
+    print("La indentación es clave")
+                                </code></pre>
+                            </div>
+                        `
+                    }
+                }
+            },
+            'm2': {
+                title: 'Módulo 2: Variables y Tipos de Datos',
+                description: 'Aprende a almacenar y manipular datos con las variables de Python y sus tipos fundamentales.',
+                complexity: 2,
+                icon: '📦',
+                tabs: {
+                    'variables': {
+                        title: 'Variables',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Contenedores Flexibles</h4>
+                            <p class="mb-4">Python tiene <strong>tipado dinámico</strong>: no necesitas declarar el tipo de una variable. El intérprete lo infiere en tiempo de ejecución. Sin embargo, tiene <strong>tipado fuerte</strong>, lo que significa que no convierte tipos automáticamente si son incompatibles (ej. no puedes sumar un número y una cadena sin convertirlos explícitamente), previniendo errores sutiles.</p>
+                            <div class="code-block bg-gray-800 text-white p-4 rounded-lg">
+                                <pre><code>nombre_variable = 10          # Es un entero (int)
+nombre_variable = "Hola"    # Ahora es una cadena (str)
+
+# Esto daría un TypeError por el tipado fuerte
+# print("Edad: " + 25) 
+
+# La forma correcta es con conversión explícita
+print("Edad: " + str(25)) 
+                                </code></pre>
+                            </div>
+                        `
+                    },
+                    'tipos': {
+                        title: 'Tipos Fundamentales',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Los Ladrillos del Código</h4>
+                            <ul class="list-disc list-inside space-y-3">
+                                <li><strong>Números:</strong> Enteros (<code>int</code>), de punto flotante (<code>float</code>) y complejos (<code>complex</code>).</li>
+                                <li><strong>Cadenas (Strings - <code>str</code>):</strong> Texto entre comillas simples <code>'</code> o dobles <code>"</code>. Inmutables.</li>
+                                <li><strong>Booleanos (<code>bool</code>):</strong> <code>True</code> o <code>False</code>. El pilar de la lógica condicional.</li>
+                            </ul>
+                        `
+                    },
+                    'operadores': {
+                        title: 'Operadores',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Realizando Acciones</h4>
+                            <p class="mb-4">Python ofrece un rico conjunto de operadores:</p>
+                            <ul class="list-disc list-inside space-y-2">
+                                <li><strong>Aritméticos:</strong> <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code> (división flotante), <code>//</code> (división entera), <code>%</code> (módulo), <code>**</code> (potencia).</li>
+                                <li><strong>De Comparación:</strong> <code>==</code>, <code>!=</code>, <code>></code>, <code><</code>, <code>>=</code>, <code><=</code>. Devuelven un booleano.</li>
+                                <li><strong>Lógicos:</strong> <code>and</code>, <code>or</code>, <code>not</code>. Para combinar expresiones booleanas.</li>
+                                <li><strong>De Asignación:</strong> <code>=</code>, <code>+=</code>, <code>-=</code>, etc. Para modificar variables de forma concisa.</li>
+                            </ul>
+                        `
+                    }
+                }
+            },
+            'm3': {
+                title: 'Módulo 3: Control de Flujo',
+                description: 'Dirige la ejecución de tu programa con condicionales y bucles para tomar decisiones y repetir tareas.',
+                complexity: 3,
+                icon: '🚦',
+                tabs: {
+                    'condicionales': {
+                        title: 'Condicionales',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Tomando Decisiones</h4>
+                            <p class="mb-4">Las estructuras <code>if</code>, <code>elif</code> (else if), y <code>else</code> permiten ejecutar bloques de código solo si se cumplen ciertas condiciones.</p>
+                             <div class="code-block bg-gray-800 text-white p-4 rounded-lg">
+                                <pre><code>nota = 75
+if nota >= 90:
+    print("Sobresaliente")
+elif nota >= 70:
+    print("Notable")
+else:
+    print("Aprobado")
+
+# Salida: Notable
+                                </code></pre>
+                            </div>
+                        `
+                    },
+                    'bucles': {
+                        title: 'Bucles',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Repitiendo Tareas</h4>
+                            <p class="mb-2"><strong>Bucle <code>while</code>:</strong> Se ejecuta mientras una condición sea verdadera. ¡Cuidado con los bucles infinitos!</p>
+                             <div class="code-block bg-gray-800 text-white p-4 rounded-lg mb-4">
+                                <pre><code>contador = 0
+while contador < 3:
+    print(f"Contador: {contador}")
+    contador += 1
+                                </code></pre>
+                            </div>
+                             <p class="mb-2"><strong>Bucle <code>for</code>:</strong> Itera sobre los elementos de una secuencia (como una lista o una cadena).</p>
+                             <div class="code-block bg-gray-800 text-white p-4 rounded-lg">
+                                <pre><code>for fruta in ["manzana", "banana", "cereza"]:
+    print(fruta)
+                                </code></pre>
+                            </div>
+                        `
+                    },
+                    'control': {
+                        title: 'Control de Bucles',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Afinando la Repetición</h4>
+                            <ul class="list-disc list-inside space-y-3">
+                                <li><strong><code>break</code>:</strong> Termina el bucle prematuramente.</li>
+                                <li><strong><code>continue</code>:</strong> Salta a la siguiente iteración del bucle, ignorando el resto del código en la iteración actual.</li>
+                                <li><strong><code>pass</code>:</strong> Es una operación nula. Se usa como un marcador de posición donde sintácticamente se requiere código, pero no quieres que haga nada (útil al diseñar la estructura de tu código).</li>
+                            </ul>
+                        `
+                    }
+                }
+            },
+            'm4': {
+                title: 'Módulo 4: Estructuras de Datos',
+                description: 'Organiza colecciones de datos de manera eficiente usando las poderosas estructuras integradas de Python.',
+                complexity: 4,
+                icon: '🏗️',
+                tabs: {
+                    'listas': {
+                        title: 'Listas',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Listas: Ordenadas y Mutables</h4>
+                            <p class="mb-4">Son colecciones ordenadas y <strong>mutables</strong> (se pueden cambiar). Se definen con corchetes <code>[]</code>. Son el caballo de batalla para colecciones de datos que necesitan ser modificadas.</p>
+                            <div class="code-block bg-gray-800 text-white p-4 rounded-lg">
+                                <pre><code>mi_lista = [1, "dos", 3.0]
+mi_lista.append("cuatro") # Añade al final
+mi_lista[0] = "uno"       # Modifica un elemento
+print(mi_lista)         # Salida: ['uno', 'dos', 3.0, 'cuatro']
+                                </code></pre>
+                            </div>
+                        `
+                    },
+                    'tuplas': {
+                        title: 'Tuplas',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Tuplas: Ordenadas e Inmutables</h4>
+                            <p class="mb-4">Similares a las listas, pero <strong>inmutables</strong> (no se pueden cambiar una vez creadas). Se definen con paréntesis <code>()</code>. Son más eficientes en memoria y se usan para datos que no deben cambiar, como coordenadas o registros fijos.</p>
+                             <div class="code-block bg-gray-800 text-white p-4 rounded-lg">
+                                <pre><code>mi_tupla = (1, "dos", 3.0)
+# mi_tupla[0] = "uno"  # Esto daría un TypeError
+print(mi_tupla[1])   # Salida: dos
+                                </code></pre>
+                            </div>
+                        `
+                    },
+                    'diccionarios': {
+                        title: 'Diccionarios',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Diccionarios: Pares Clave-Valor</h4>
+                            <p class="mb-4">Colecciones no ordenadas (en versiones antiguas de Python) de pares <strong>clave-valor</strong>. Son extremadamente rápidos para buscar datos por su clave. Se definen con llaves <code>{}</code>.</p>
+                            <div class="code-block bg-gray-800 text-white p-4 rounded-lg">
+                                <pre><code>mi_diccionario = {"nombre": "Ana", "edad": 28}
+print(mi_diccionario["nombre"]) # Acceso por clave. Salida: Ana
+mi_diccionario["ciudad"] = "Madrid" # Añadir nuevo par
+print(mi_diccionario) # Salida: {'nombre': 'Ana', 'edad': 28, 'ciudad': 'Madrid'}
+                                </code></pre>
+                            </div>
+                        `
+                    },
+                    'conjuntos': {
+                        title: 'Conjuntos',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Conjuntos: Únicos y Desordenados</h4>
+                            <p class="mb-4">Colecciones desordenadas de elementos <strong>únicos</strong>. Son ideales para eliminar duplicados o para realizar operaciones matemáticas de conjuntos (unión, intersección, etc.).</p>
+                            <div class="code-block bg-gray-800 text-white p-4 rounded-lg">
+                                <pre><code>numeros = [1, 2, 2, 3, 4, 4, 4]
+conjunto_unico = set(numeros)
+print(conjunto_unico) # Salida: {1, 2, 3, 4}
+
+set1 = {1, 2, 3}
+set2 = {3, 4, 5}
+print(set1.intersection(set2)) # Salida: {3}
+                                </code></pre>
+                            </div>
+                        `
+                    }
+                }
+            },
+            'm5': {
+                title: 'Módulo 5: Funciones',
+                description: 'Escribe código modular y reutilizable encapsulando la lógica en funciones.',
+                complexity: 5,
+                icon: '🔧',
+                tabs: {
+                    'definicion': {
+                        title: 'Definición y Llamada',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Bloques de Código Reutilizables</h4>
+                            <p class="mb-4">Las funciones, definidas con <code>def</code>, son la base para organizar el código. Permiten evitar la repetición (principio DRY: Don't Repeat Yourself) y hacen el código más legible y fácil de mantener.</p>
+                             <div class="code-block bg-gray-800 text-white p-4 rounded-lg">
+                                <pre><code>def saludar(nombre):
+    """Este es un docstring que explica la función."""
+    return f"Hola, {nombre}!"
+
+mensaje = saludar("Mundo")
+print(mensaje) # Salida: Hola, Mundo!
+                                </code></pre>
+                            </div>
+                        `
+                    },
+                    'parametros': {
+                        title: 'Parámetros y Argumentos',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Flexibilizando Funciones</h4>
+                            <p class="mb-4">Las funciones pueden aceptar diferentes tipos de argumentos:</p>
+                             <ul class="list-disc list-inside space-y-3">
+                                <li><strong>Argumentos posicionales:</strong> Se pasan en orden.</li>
+                                <li><strong>Argumentos con valores por defecto:</strong> Hacen que ciertos parámetros sean opcionales.</li>
+                                <li><strong><code>*args</code>:</strong> Para capturar un número arbitrario de argumentos posicionales en una tupla.</li>
+                                <li><strong><code>**kwargs</code>:</strong> Para capturar argumentos de palabra clave arbitrarios en un diccionario.</li>
+                            </ul>
+                            <div class="code-block bg-gray-800 text-white p-4 rounded-lg mt-4">
+                                <pre><code>def funcion_completa(req, default="valor", *args, **kwargs):
+    print(f"Requerido: {req}")
+    print(f"Por defecto: {default}")
+    print(f"Args: {args}")
+    print(f"Kwargs: {kwargs}")
+
+funcion_completa("val1", "otro", 1, 2, 3, clave1="a", clave2="b")
+                                </code></pre>
+                            </div>
+                        `
+                    },
+                    'lambda': {
+                        title: 'Funciones Lambda',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Funciones Anónimas y Concisas</h4>
+                            <p class="mb-4">Una función <code>lambda</code> es una pequeña función anónima. Puede tener cualquier número de argumentos, pero solo una expresión. Son útiles para operaciones cortas, a menudo pasadas como argumento a funciones de orden superior como <code>map()</code> o <code>filter()</code>.</p>
+                            <div class="code-block bg-gray-800 text-white p-4 rounded-lg">
+                                <pre><code># Función lambda para sumar 10 a un número
+sumar_diez = lambda x: x + 10
+print(sumar_diez(5)) # Salida: 15
+
+# Uso con map() para aplicar la función a cada elemento de una lista
+numeros = [1, 2, 3]
+cuadrados = list(map(lambda x: x**2, numeros))
+print(cuadrados) # Salida: [1, 4, 9]
+                                </code></pre>
+                            </div>
+                        `
+                    }
+                }
+            },
+            'm7': {
+                title: 'Módulo 7: Programación Orientada a Objetos (POO)',
+                description: 'Modela entidades del mundo real con clases y objetos, un pilar del software moderno.',
+                complexity: 7,
+                icon: '🏛️',
+                tabs: {
+                    'clases-objetos': {
+                        title: 'Clases y Objetos',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Planos y sus Instancias</h4>
+                            <p class="mb-4">Una <strong>clase</strong> es un plano para crear objetos. Un <strong>objeto</strong> es una instancia de una clase. El método <code>__init__</code> es el constructor, que inicializa los atributos del objeto. <code>self</code> se refiere a la instancia del objeto actual.</p>
+                             <div class="code-block bg-gray-800 text-white p-4 rounded-lg">
+                                <pre><code>class Coche:
+    def __init__(self, marca, modelo):
+        self.marca = marca
+        self.modelo = modelo
+
+    def describir(self):
+        return f"Coche: {self.marca} {self.modelo}"
+
+mi_coche = Coche("Toyota", "Corolla")
+print(mi_coche.describir()) # Salida: Coche: Toyota Corolla
+                                </code></pre>
+                            </div>
+                        `
+                    },
+                    'pilares': {
+                        title: 'Pilares de la POO',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Los 4 Pilares Fundamentales</h4>
+                            <div class="grid md:grid-cols-2 gap-4 mt-4">
+                                <div class="bg-stone-100 p-4 rounded-lg">
+                                    <h5 class="font-bold text-teal-700">Herencia</h5>
+                                    <p class="text-sm mt-2">Permite a una clase (hija) heredar atributos y métodos de otra (padre), promoviendo la reutilización de código.</p>
+                                </div>
+                                 <div class="bg-stone-100 p-4 rounded-lg">
+                                    <h5 class="font-bold text-teal-700">Polimorfismo</h5>
+                                    <p class="text-sm mt-2">Permite que objetos de diferentes clases respondan al mismo método de manera diferente. En Python, esto se ve a menudo con la sobreescritura de métodos.</p>
+                                </div>
+                                <div class="bg-stone-100 p-4 rounded-lg">
+                                    <h5 class="font-bold text-teal-700">Encapsulamiento</h5>
+                                    <p class="text-sm mt-2">Agrupa datos y métodos que operan sobre esos datos en una sola unidad (la clase). Se usa el prefijo <code>__</code> (doble guion bajo) para indicar atributos "privados".</p>
+                                </div>
+                                 <div class="bg-stone-100 p-4 rounded-lg">
+                                    <h5 class="font-bold text-teal-700">Abstracción</h5>
+                                    <p class="text-sm mt-2">Oculta la complejidad interna y expone solo la funcionalidad esencial de un objeto, simplificando su uso.</p>
+                                </div>
+                            </div>
+                        `
+                    }
+                }
+            },
+            'm8': {
+                title: 'Módulo 8: Manejo de Errores',
+                description: 'Escribe código robusto que pueda manejar fallos y situaciones inesperadas sin detenerse.',
+                complexity: 6,
+                icon: '🛡️',
+                tabs: {
+                    'try-except': {
+                        title: 'Try / Except',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Capturando Excepciones</h4>
+                            <p class="mb-4">El bloque <code>try...except</code> es la herramienta fundamental de Python para el manejo de errores. El código que podría fallar se coloca en el bloque <code>try</code>. Si ocurre un error (una excepción), el código en el bloque <code>except</code> correspondiente se ejecuta.</p>
+                            <div class="code-block bg-gray-800 text-white p-4 rounded-lg">
+                                <pre><code>try:
+    resultado = 10 / 0
+except ZeroDivisionError:
+    print("Error: No se puede dividir por cero.")
+# El programa continúa en lugar de fallar.
+print("Ejecución finalizada.")
+                                </code></pre>
+                            </div>
+                        `
+                    },
+                    'else-finally': {
+                        title: 'Else y Finally',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Bloques Adicionales</h4>
+                             <ul class="list-disc list-inside space-y-3">
+                                <li><strong><code>else</code>:</strong> El código en este bloque se ejecuta <strong>solo si</strong> no ocurrió ninguna excepción en el bloque <code>try</code>.</li>
+                                <li><strong><code>finally</code>:</strong> El código en este bloque se ejecuta <strong>siempre</strong>, haya ocurrido una excepción o no. Es ideal para tareas de limpieza, como cerrar archivos o conexiones de red.</li>
+                            </ul>
+                        `
+                    },
+                    'with': {
+                        title: 'La Declaración `with`',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Gestores de Contexto</h4>
+                            <p class="mb-4">La declaración <code>with</code> simplifica el manejo de recursos. Garantiza que las operaciones de limpieza (como cerrar un archivo) se realicen automáticamente, incluso si ocurren errores. Es la forma preferida y más limpia de trabajar con recursos como archivos.</p>
+                            <div class="code-block bg-gray-800 text-white p-4 rounded-lg">
+                                <pre><code># Forma moderna y segura
+with open("mi_archivo.txt", "w") as f:
+    f.write("Hola, gestor de contexto!")
+# El archivo se cierra automáticamente aquí.
+
+# Forma antigua (más propensa a errores)
+# f = open("mi_archivo.txt", "w")
+# try:
+#     f.write("Hola")
+# finally:
+#     f.close()
+                                </code></pre>
+                            </div>
+                        `
+                    }
+                }
+            },
+            'm9': {
+                title: 'Módulo 9: Conceptos Avanzados',
+                description: 'Domina características poderosas de Python como decoradores, generadores y concurrencia.',
+                complexity: 9,
+                icon: '✨',
+                tabs: {
+                    'decoradores': {
+                        title: 'Decoradores',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Modificando Funciones dinámicamente</h4>
+                            <p class="mb-4">Un decorador es una función que toma otra función y extiende su comportamiento sin modificarla explícitamente. Se usan con la sintaxis <code>@decorador</code>. Son muy útiles para añadir funcionalidades transversales como logging, caching o comprobación de permisos.</p>
+                            <div class="code-block bg-gray-800 text-white p-4 rounded-lg">
+                                <pre><code>def mi_decorador(func):
+    def wrapper():
+        print("Algo antes de la función.")
+        func()
+        print("Algo después de la función.")
+    return wrapper
+
+@mi_decorador
+def saluda():
+    print("¡Hola!")
+
+saluda()
+                                </code></pre>
+                            </div>
+                        `
+                    },
+                    'generadores': {
+                        title: 'Generadores',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Iteradores Eficientes en Memoria</h4>
+                            <p class="mb-4">Los generadores permiten crear iteradores de una manera sencilla. Utilizan la palabra clave <code>yield</code> para producir una secuencia de valores "perezosamente" (uno a la vez), en lugar de crear y almacenar toda la lista en memoria. Son ideales para trabajar con conjuntos de datos muy grandes o secuencias infinitas.</p>
+                            <div class="code-block bg-gray-800 text-white p-4 rounded-lg">
+                                <pre><code>def fibonacci_generator(limite):
+    a, b = 0, 1
+    while a < limite:
+        yield a
+        a, b = b, a + b
+
+# Solo se genera un número a la vez, no se almacena toda la secuencia.
+for num in fibonacci_generator(100):
+    print(num)
+                                </code></pre>
+                            </div>
+                        `
+                    },
+                    'asyncio': {
+                        title: 'Asyncio y Threading',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Manejo de la Concurrencia</h4>
+                             <p class="mb-4">La concurrencia permite que tu programa realice múltiples tareas a la vez, mejorando drásticamente el rendimiento en operaciones de E/S (Entrada/Salida).</p>
+                             <ul class="list-disc list-inside space-y-3">
+                                <li><strong><code>asyncio</code> (<code>async</code>/<code>await</code>):</strong> Ideal para tareas <strong>ligadas a E/S</strong> (p.ej., peticiones web, acceso a bases de datos). Utiliza un único hilo para gestionar múltiples tareas de forma cooperativa, evitando el bloqueo mientras se espera una respuesta. Es la forma moderna de hacer concurrencia en Python.</li>
+                                <li><strong><code>threading</code>:</strong> Permite ejecutar código en múltiples hilos. En CPython, el GIL (Global Interpreter Lock) limita la ejecución de código Python a un solo hilo a la vez, por lo que es más útil para tareas ligadas a E/S (donde el hilo puede liberar el GIL mientras espera) que para tareas de cómputo intensivo (ligadas a CPU).</li>
+                            </ul>
+                        `
+                    }
+                }
+            },
+            'm10': {
+                title: 'Módulo 10: Algoritmos y Estructuras de Datos Avanzadas',
+                description: 'Escribe código eficiente y escalable aplicando algoritmos clásicos y estructuras de datos complejas.',
+                complexity: 8,
+                icon: '🧠',
+                tabs: {
+                    'algoritmos': {
+                        title: 'Algoritmos Fundamentales',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Resolviendo Problemas Eficientemente</h4>
+                            <ul class="list-disc list-inside space-y-3">
+                                <li><strong>Búsqueda:</strong> La búsqueda lineal es simple (O(n)), pero la <strong>búsqueda binaria</strong> es mucho más rápida (O(log n)) en datos <strong>ordenados</strong>.</li>
+                                <li><strong>Ordenación:</strong> Algoritmos como <strong>Mergesort</strong> y <strong>Quicksort</strong> son eficientes (O(n log n) en promedio) y se basan en la estrategia de "divide y vencerás".</li>
+                                <li><strong>Recursión:</strong> Una técnica donde una función se llama a sí misma. Es elegante para problemas que se pueden descomponer en subproblemas idénticos más pequeños, como el cálculo de factoriales o la secuencia de Fibonacci.</li>
+                            </ul>
+                        `
+                    },
+                    'estructuras-avanzadas': {
+                        title: 'Estructuras Avanzadas',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Organizando Datos Complejos</h4>
+                             <ul class="list-disc list-inside space-y-3">
+                                <li><strong>Árboles:</strong> Estructuras de datos jerárquicas. Los árboles de búsqueda binaria, por ejemplo, permiten inserciones y búsquedas muy eficientes.</li>
+                                <li><strong>Grafos:</strong> Representan relaciones entre entidades (nodos conectados por aristas). Son fundamentales para modelar redes sociales, mapas de carreteras, etc. Algoritmos como Dijkstra encuentran la ruta más corta en un grafo.</li>
+                            </ul>
+                        `
+                    }
+                }
+            },
+            'm11': {
+                title: 'Módulo 11: Desarrollo Profesional',
+                description: 'Adopta las herramientas y prácticas que definen a un desarrollador de software profesional.',
+                complexity: 10,
+                icon: '🏆',
+                tabs: {
+                    'practicas': {
+                        title: 'Mejores Prácticas',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Escribiendo Código de Calidad</h4>
+                            <ul class="list-disc list-inside space-y-3">
+                                <li><strong>PEP 8:</strong> Sigue la guía de estilo oficial de Python. Usa herramientas como <code>black</code> o <code>flake8</code> para automatizarlo. Un código consistente es más fácil de leer y mantener.</li>
+                                <li><strong>Control de Versiones (Git):</strong> Esencial. Aprende a usar Git y plataformas como GitHub para colaborar, rastrear cambios y gestionar tu código.</li>
+                                <li><strong>Entornos Virtuales:</strong> No negociable. Cada proyecto debe tener su propio entorno para aislar dependencias y garantizar la reproducibilidad.</li>
+                                <li><strong>Documentación:</strong> Escribe docstrings claros en tus funciones y clases. Un código bien documentado es un regalo para tu yo del futuro y para tus colegas.</li>
+                            </ul>
+                        `
+                    },
+                    'testing': {
+                        title: 'Pruebas y Depuración',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">Asegurando la Calidad</h4>
+                            <p class="mb-4">Las <strong>pruebas unitarias</strong> verifican que pequeñas partes de tu código (funciones, métodos) funcionan como se espera. Frameworks como <code>unittest</code> (integrado) y <code>pytest</code> (muy popular) te ayudan a escribirlas.</p>
+                            <p class="mb-4">La <strong>depuración</strong> es el arte de encontrar y corregir errores. Usa el depurador integrado de tu IDE (VS Code, PyCharm) o <code>pdb</code> en la línea de comandos para inspeccionar tu código paso a paso.</p>
+                        `
+                    },
+                    'futuro': {
+                        title: 'Mantenerse Relevante',
+                        content: `
+                            <h4 class="text-xl font-semibold mb-3">El Viaje Nunca Termina</h4>
+                            <p class="mb-4">El ecosistema de Python evoluciona. Para seguir siendo un desarrollador senior, es crucial:</p>
+                            <ul class="list-disc list-inside space-y-3">
+                                <li><strong>Mantenerse actualizado:</strong> Lee las notas de las nuevas versiones de Python y de tus librerías clave.</li>
+                                <li><strong>Practicar constantemente:</strong> Resuelve problemas en plataformas como LeetCode o HackerRank.</li>
+                                <li><strong>Contribuir al código abierto:</strong> Es una de las mejores formas de aprender de código real, colaborar y construir tu portafolio.</li>
+                            </ul>
+                        `
+                    }
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const roadmapContainer = document.getElementById('roadmap');
+            const panel = document.getElementById('contentPanel');
+            const overlay = document.getElementById('panelOverlay');
+            const closeButton = document.getElementById('closePanelButton');
+            const panelTitle = document.getElementById('panelTitle');
+            const panelDescription = document.getElementById('panelDescription');
+            const panelTabsContainer = document.getElementById('panelTabs');
+            const panelContentContainer = document.getElementById('panelContent');
+
+            const moduleKeys = Object.keys(courseData);
+            
+            // Populate roadmap
+            moduleKeys.forEach((key, index) => {
+                const module = courseData[key];
+                const item = document.createElement('div');
+                item.className = 'roadmap-item mb-8 flex justify-between items-center w-full';
+                const contentSide = document.createElement('div');
+                contentSide.className = 'roadmap-content w-1/2 relative';
+
+                contentSide.innerHTML = `
+                    <div class="icon-container shadow-lg">
+                        <span class="text-2xl">${module.icon}</span>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-lg border border-stone-200 cursor-pointer hover:shadow-xl hover:border-teal-500 transition-all duration-300" data-module-id="${key}">
+                        <h3 class="text-xl font-bold text-teal-700">${module.title}</h3>
+                        <p class="mt-2 text-stone-600">${module.description}</p>
+                    </div>
+                `;
+                
+                const emptySide = document.createElement('div');
+                emptySide.className = 'w-1/2';
+
+                if (index % 2 === 0) {
+                    item.appendChild(contentSide);
+                    item.appendChild(emptySide);
+                } else {
+                    item.appendChild(emptySide);
+                    item.appendChild(contentSide);
+                }
+                
+                roadmapContainer.appendChild(item);
+            });
+
+            // Handle panel opening
+            roadmapContainer.addEventListener('click', (e) => {
+                const moduleCard = e.target.closest('[data-module-id]');
+                if (moduleCard) {
+                    const moduleId = moduleCard.dataset.moduleId;
+                    const moduleData = courseData[moduleId];
+                    openPanel(moduleData);
+                }
+            });
+
+            function openPanel(moduleData) {
+                panelTitle.textContent = moduleData.title;
+                panelDescription.textContent = moduleData.description;
+                
+                panelTabsContainer.innerHTML = '';
+                panelContentContainer.innerHTML = '';
+
+                const tabKeys = Object.keys(moduleData.tabs);
+                tabKeys.forEach((tabKey, index) => {
+                    const tabData = moduleData.tabs[tabKey];
+                    
+                    const button = document.createElement('button');
+                    button.className = `tab-button px-4 py-2 border-b-2 transition-colors duration-200 ${index === 0 ? 'active' : 'border-transparent'}`;
+                    button.textContent = tabData.title;
+                    button.dataset.tabId = tabKey;
+                    panelTabsContainer.appendChild(button);
+
+                    const contentDiv = document.createElement('div');
+                    contentDiv.id = `content-${tabKey}`;
+                    contentDiv.className = `tab-content ${index !== 0 ? 'hidden' : ''}`;
+                    contentDiv.innerHTML = tabData.content;
+                    panelContentContainer.appendChild(contentDiv);
+                });
+                
+                addCopyFunctionality(panelContentContainer);
+
+                panel.classList.add('open');
+                overlay.classList.remove('hidden');
+            }
+            
+            // Handle tab switching
+            panelTabsContainer.addEventListener('click', (e) => {
+                if(e.target.classList.contains('tab-button')) {
+                    const tabId = e.target.dataset.tabId;
+                    
+                    panelTabsContainer.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    panelContentContainer.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+                    document.getElementById(`content-${tabId}`).classList.remove('hidden');
+                }
+            });
+
+
+            function closePanel() {
+                panel.classList.remove('open');
+                overlay.classList.add('hidden');
+            }
+            
+            function addCopyFunctionality(container) {
+                const codeBlocks = container.querySelectorAll('.code-block');
+                codeBlocks.forEach(block => {
+                    const copyButton = document.createElement('button');
+                    copyButton.className = 'copy-button';
+                    copyButton.textContent = 'Copiar';
+                    block.appendChild(copyButton);
+
+                    copyButton.addEventListener('click', () => {
+                        const code = block.querySelector('pre code').innerText;
+                        
+                        const textarea = document.createElement('textarea');
+                        textarea.value = code;
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        try {
+                           document.execCommand('copy');
+                           copyButton.textContent = '¡Copiado!';
+                        } catch (err) {
+                           copyButton.textContent = 'Error';
+                        }
+                        document.body.removeChild(textarea);
+
+                        setTimeout(() => {
+                           copyButton.textContent = 'Copiar';
+                        }, 2000);
+                    });
+                });
+            }
+
+            closeButton.addEventListener('click', closePanel);
+            overlay.addEventListener('click', closePanel);
+
+            // Chart.js implementation
+            const ctx = document.getElementById('complexityChart').getContext('2d');
+            const chartLabels = moduleKeys.map(key => courseData[key].title.replace('Módulo ', 'M').replace(':',''));
+            const chartData = moduleKeys.map(key => courseData[key].complexity);
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Complejidad Conceptual',
+                        data: chartData,
+                        backgroundColor: 'rgba(20, 184, 166, 0.6)',
+                        borderColor: 'rgba(15, 118, 110, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 10,
+                             grid: {
+                                color: '#e5e7eb'
+                            }
+                        },
+                        x: {
+                             grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#1f2937',
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 12
+                            },
+                             callbacks: {
+                                title: function(context) {
+                                    return courseData[moduleKeys[context[0].dataIndex]].title;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
